@@ -8,17 +8,58 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-// importing this as a type to assign to DB
-const dbConnection = require("./databaseConnection");
+exports.updateProduct = exports.addProduct = exports.getAllProducts = void 0;
+const databaseConnection_1 = __importDefault(require("./databaseConnection")); // Import your PostgreSQL pool connection
+// 🟢 Get all products
 const getAllProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const db = yield dbConnection;
     try {
-        const products = yield db.query('SELECT * FROM products');
-        res.status(200).json({ message: 'Product successfully added', data: products });
+        const result = yield databaseConnection_1.default.query('SELECT * FROM products INNER JOIN suppliers ON supplier_id = suppliers.id');
+        res.status(200).json({ message: 'Products retrieved successfully', data: result.rows });
     }
     catch (error) {
-        res.status(500).json({ message: 'Unable to connect to the database.', data: [error] });
+        console.error("Database error:", error);
+        res.status(500).json({ message: 'Unable to fetch products.', error });
     }
 });
-module.exports = { getAllProducts };
+exports.getAllProducts = getAllProducts;
+// 🔵 Add a new product
+const addProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name, supplier_id, category, item_cost, low_stock_threshold, stock_quantity } = req.body;
+    try {
+        const result = yield databaseConnection_1.default.query(`INSERT INTO products (name, supplier_id, category, item_cost, low_stock_threshold, stock_quantity)
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`, [name, supplier_id, category, item_cost, low_stock_threshold, stock_quantity]);
+        res.status(201).json({
+            message: "Product added successfully",
+            data: result.rows[0],
+        });
+    }
+    catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ message: 'Unable to add product.', error });
+    }
+});
+exports.addProduct = addProduct;
+const updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const { name, supplier_id, category, item_cost, low_stock_threshold, stock_quantity } = req.body;
+    try {
+        const result = yield databaseConnection_1.default.query('UPDATE products SET name = $1, supplier_id = $2, category = $3, item_cost = $4, low_stock_threshold = $5, stock_quantity = $6 ' +
+            'WHERE id = $7 RETURNING *', [name, supplier_id, category, item_cost, low_stock_threshold, stock_quantity, id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+        res.status(200).json({
+            message: "Product updated successfully",
+            data: result.rows[0],
+        });
+    }
+    catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ message: 'Unable to update product.', error });
+    }
+});
+exports.updateProduct = updateProduct;

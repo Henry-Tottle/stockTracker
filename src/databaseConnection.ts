@@ -1,10 +1,14 @@
-const mysql = require('promise-mysql');
-import { Pool } from 'mysql';
-const dbConnection: Pool = mysql.createConnection({
-    host: '127.0.0.1',
-    user: 'root',
-    password: 'password',
-    database: 'stockTracker'
-});
+import { Pool } from "pg";
+import dotenv from "dotenv";
 
-module.exports = dbConnection;
+dotenv.config();
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false,
+    },
+}
+);
+
+export default pool;
