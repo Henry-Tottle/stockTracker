@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProduct = exports.addProduct = exports.getAllProducts = void 0;
+exports.deleteProduct = exports.updateProduct = exports.addProduct = exports.getAllProducts = void 0;
 const databaseConnection_1 = __importDefault(require("./databaseConnection")); // Import your PostgreSQL pool connection
 // 🟢 Get all products
 const getAllProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -63,3 +63,21 @@ const updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.updateProduct = updateProduct;
+const deleteProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    try {
+        const result = yield databaseConnection_1.default.query(`DELETE FROM products WHERE id = $1 RETURNING *`, [id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+        res.status(202).json({
+            message: "Product deleted successfully",
+            data: result.rows[0],
+        });
+    }
+    catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ message: 'Unable to delete product.', error });
+    }
+});
+exports.deleteProduct = deleteProduct;

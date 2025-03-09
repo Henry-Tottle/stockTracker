@@ -59,4 +59,25 @@ const updateProduct = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Unable to update product.', error });
     }
 };
-export { getAllProducts, addProduct, updateProduct };
+
+const deleteProduct = async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        const result = await pool.query(
+            `DELETE FROM products WHERE id = $1 RETURNING *`,
+            [id]
+        );
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+        res.status(202).json({
+            message: "Product deleted successfully",
+            data: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ message: 'Unable to delete product.', error });
+    }
+}
+export { getAllProducts, addProduct, updateProduct, deleteProduct };
